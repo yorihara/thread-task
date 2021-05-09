@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["orihara.yasumi@gmail.com"]
 
   spec.summary       = %q{ Wrapper library for Thread class for easily describing parallel processing. }
-  spec.description   = %q{ Yet another, a wrapper library of Thread class. Thread::Task, Thrad::Pool, Kernel#future }
+  spec.description   = %q{ Wrapper library of Thread class. Thread::Task, Thrad::Task::Pool }
   spec.homepage      = "https://github.com/yorihara/thread-task/"
   spec.license       = "MIT"
 
