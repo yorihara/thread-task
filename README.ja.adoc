@@ -1,0 +1,224 @@
+= Thread::Task
+
+並列処理を簡単に記述するための Thread クラスのラッパーライブラリ.
+
+== 特徴
+
+* Thread::Task は並列処理でよく使う構成を簡潔に記述できるようにしたもの.
+* Thread::Task::Pool は Thread::Task の並列実行数を制限する.
+* 指定された制限時間内に一度だけ実行する.
+
+== 導入
+
+アプリの Gemfile にこの行を追加
+
+[source,ruby]
+----
+gem 'thread-task'
+----
+
+それから実行
+
+    $ bundle install
+
+または次のように手動で導入
+
+    $ gem install thread-task
+    or
+    $ gem install -l thread-task-x.x.x.gem
+
+== 使い方
+
+::Thread::Task は ::Task の別名をもつ.
+
+=== 並列実行を開始して完了を待って結果を得る.
+
+[source,ruby]
+----
+require  "thread/task"
+
+task  =  Task.new do
+  sleep  2
+  Time.now
+end
+p task.value
+----
+
+=== 並列実行の最大数を制限する.
+
+[source,ruby]
+----
+require  "thread/task"
+
+tasks  =  (0...10).map do |i|
+  p [i]
+  Task.new( i, count: 3 ) do |j|
+    p [" ->", j]
+    sleep( rand * 2 )
+    p ["<- ", j]
+  end
+end
+
+tasks.each(&:join)
+----
+
+=== ひとつのプールで並列実行の最大数を制限する.
+
+[source,ruby]
+----
+require  "thread/task"
+
+pool  =  Task::Pool.new(3)
+
+tasks1  =  (0...4).map do |i|
+  p [i]
+  Task.new( i, pool: pool ) do |j|
+    p [" ->", j]
+    sleep( rand * 2 )
+    p ["<- ", j]
+  end
+end
+tasks2  =  (4...8).map do |i|
+  p [i]
+  Task.new( i, pool: pool ) do |j|
+    p [" ->", j]
+    sleep( rand * 2 )
+    p ["<- ", j]
+  end
+end
+
+tasks1.each(&:join)
+tasks2.each(&:join)
+----
+
+=== 最初に一度だけブロックを呼び出して、制限時間内の再呼び出しは無視する.
+
+[source,ruby]
+----
+require "thread/task"
+
+tasks = (1..10).map do |i|
+  sleep  0.1
+  Task.once( i, guard:3 ) do |j|
+    p j
+  end
+end
+
+tasks.each(&:join)
+----
+
+=== 制限時間内に再呼び出しがないとき、最後に一度だけブロックを呼び出す.
+
+[source,ruby]
+----
+require "thread/task"
+
+tasks = (1..10).map do |i|
+  sleep  0.1
+  Task.once( i, delay:3 ) do |j|
+    p j
+  end
+end
+
+tasks.each(&:join)
+----
+
+== リファレンス
+
+=== 新たな Thread::Task を作成する.
+
+[source,ruby]
+----
+Thread::Task.new( *args, pool: nil, count: nil, &block )
+----
+
+* Result:
+  ** Thread::Task オブジェクト.
+
+* Parameter:
+  ** args: args はそのままブロックに渡す.
+  ** pool: Thread::Task::Pool オブジェクト. (default: nil)
+  ** count: 並列実行の最大数. (default: nil)
+  ** block: コールバック動作.
+
+* Block Parameter:
+  ** args: args をそのスレッド固有のローカル変数として扱う.
+
+=== スレッド停止を待つ. スレッドの例外を無視する.
+
+[source,ruby]
+----
+Thread::Task#join
+----
+
+* Result:
+  ** nil
+
+* Parameter:
+  ** なし.
+
+=== スレッド停止を待って結果を得る. スレッドの例外を検出する.
+
+[source,ruby]
+----
+Thread::Task#value
+----
+
+* Result:
+  ** ブロックの実行結果.
+
+* Parameter:
+  ** なし.
+
+=== スレッドの実行を取り消す.
+
+[source,ruby]
+----
+Thread::Task#cancel
+----
+
+* Result:
+  ** nil.
+
+* Parameter:
+  ** なし.
+
+=== 短時間のうちに同じ行が再び呼び出された際に、一度だけ実行する.
+
+[source,ruby]
+----
+Thread::Task.once( *args, delay: nil, guard: nil, ident: nil, &block )
+----
+
+* Result:
+  ** Thread::Task オブジェクト.
+
+* Parameter:
+  ** args: args はそのままブロックに渡す.
+  ** delay: 実行前に待機する秒数. (default: nil)
+  ** guard: 実行後に保護する秒数. (default: nil)
+  ** ident: タスク識別子. (default: nil )
+  ** block: コールバック動作.
+
+=== 新たな Thread::Pool を作成する.
+
+[source,ruby]
+----
+Thread::Pool.new( count )
+----
+
+* Result:
+  ** Thread::Pool オブジェクト.
+
+* Parameter:
+  ** count: 並列実行の最大数.
+
+== 貢献
+
+不具合報告とプルリクエストは GitHub https://github.com/yorihara/thread-task まで. 
+
+== ライセンス
+
+この Gem は、 http://opensource.org/licenses/MIT[MITライセンス] の条件に基づいてオープンソースとして入手できる.
+
+Copyright (c) yorihara <orihara.yasumi@gmail.com>

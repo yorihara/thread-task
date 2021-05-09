@@ -1,0 +1,224 @@
+= Thread::Task
+
+A wrapper library of Thread class for easily describing parallel processing.
+
+== Features
+
+* Thread::Task is a configuration that allows you to briefly describe the configuration often used in parallel processing.
+* Thread::Task::Pool limits the number of parallel executions of Thread::Task.
+* Runs only once within the specified timelimit.
+
+== Installation
+
+Add this line to your application's Gemfile:
+
+[source,ruby]
+----
+gem 'thread-task'
+----
+
+And then execute:
+
+    $ bundle install
+
+Or install it yourself as:
+
+    $ gem install thread-task
+    or
+    $ gem install -l thread-task-x.x.x.gem
+
+== Usage
+
+::Thread::Task has alias ::Task.
+
+=== Start parallel execution, wait for completion and get result.
+
+[source,ruby]
+----
+require  "thread/task"
+
+task  =  Task.new do
+  sleep  2
+  Time.now
+end
+p task.value
+----
+
+=== Limit the max count of parallel executions.
+
+[source,ruby]
+----
+require  "thread/task"
+
+tasks  =  (0...10).map do |i|
+  p [i]
+  Task.new( i, count: 3 ) do |j|
+    p [" ->", j]
+    sleep( rand * 2 )
+    p ["<- ", j]
+  end
+end
+
+tasks.each(&:join)
+----
+
+=== Limit the max count of parallel executions with a Task::Pool.
+
+[source,ruby]
+----
+require  "thread/task"
+
+pool  =  Task::Pool.new(3)
+
+tasks1  =  (0...4).map do |i|
+  p [i]
+  Task.new( i, pool: pool ) do |j|
+    p [" ->", j]
+    sleep( rand * 2 )
+    p ["<- ", j]
+  end
+end
+tasks2  =  (4...8).map do |i|
+  p [i]
+  Task.new( i, pool: pool ) do |j|
+    p [" ->", j]
+    sleep( rand * 2 )
+    p ["<- ", j]
+  end
+end
+
+tasks1.each(&:join)
+tasks2.each(&:join)
+----
+
+=== Invoke the block only once at the beginning, and ignoring recalls within the time limit.
+
+[source,ruby]
+----
+require "thread/task"
+
+tasks = (1..10).map do |i|
+  sleep  0.1
+  Task.once( i, guard:3 ) do |j|
+    p j
+  end
+end
+
+tasks.each(&:join)
+----
+
+=== When there is no recall within the time limit, invoke the block only once at the end.
+
+[source,ruby]
+----
+require "thread/task"
+
+tasks = (1..10).map do |i|
+  sleep  0.1
+  Task.once( i, delay:3 ) do |j|
+    p j
+  end
+end
+
+tasks.each(&:join)
+----
+
+== Reference
+
+=== Create a new Thread::Task.
+
+[source,ruby]
+----
+Thread::Task.new( *args, pool: nil, count: nil, &block )
+----
+
+* Result:
+  ** Thread::Task object.
+
+* Parameter:
+  ** args: Pass args as is to the block.
+  ** pool: Thread::Task::Pool object. (default: nil)
+  ** count: Max count of parallel executions. (default: nil)
+  ** block: callback action.
+
+* Block Parameter:
+  ** args: Treat args as local variables specific to that thread.
+
+=== Wait for thread stop. Ignore thread exceptions.
+
+[source,ruby]
+----
+Thread::Task#join
+----
+
+* Result:
+  ** nil
+
+* Parameter:
+  ** none.
+
+=== Wait for the thread to stop and get the result. Detect the thread exception.
+
+[source,ruby]
+----
+Thread::Task#value
+----
+
+* Result:
+  ** The execution result of the block.
+
+* Parameter:
+  ** none.
+
+=== Cancel the execution of the thread.
+
+[source,ruby]
+----
+Thread::Task#cancel
+----
+
+* Result:
+  ** nil.
+
+* Parameter:
+  ** none.
+
+=== Create a new Thread::Pool.
+
+[source,ruby]
+----
+Thread::Task.once( *args, delay: nil, guard: nil, &block )
+----
+
+* Result:
+  ** Thread::Task object.
+
+* Parameter:
+  ** args: Pass args as is to the block.
+  ** delay: Wait for delay second before call block. (default: nil)
+  ** guard: Wait for guard second after call block. (default: nil)
+  ** ident: Task identifier. (default: nil )
+  ** block: callback action.
+
+=== Create a new Thread::Pool.
+
+[source,ruby]
+----
+Thread::Pool.new( count )
+----
+
+* Result:
+  ** Thread::Pool object.
+
+* Parameter:
+  ** count: Max count of parallel executions.
+
+== Contributing
+
+Bug reports and pull requests are welcome on GitHub at https://github.com/yorihara/thread-task.
+
+== License
+
+The gem is available as open source under the terms of the http://opensource.org/licenses/MIT[MIT License].
+
+Copyright (c) yorihara <orihara.yasumi@gmail.com>
